@@ -1,0 +1,52 @@
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.local
+
+# IDE & Editors
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# OS Generated
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# .NET / C# Build Artifacts
+bin/
+obj/
+*.user
+*.suo
+project.lock.json
+
+# Node / React
+node_modules/
+dist/
+build/
+.npm
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Docker
+docker-compose.override.yml
+
+#Directories
+prds
+templates
+.agents
+WORKFLOW.md
