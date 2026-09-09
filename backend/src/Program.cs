@@ -16,6 +16,9 @@ else
         options.UseInMemoryDatabase("EnterpriseRAG_Dev"));
 }
 
+builder.Services.AddScoped<EnterpriseRAG.Application.Common.Interfaces.IAzureBlobQueueService, EnterpriseRAG.Infrastructure.Storage.AzureBlobQueueService>();
+builder.Services.AddScoped<EnterpriseRAG.Application.Services.IDocumentUploadService, EnterpriseRAG.Application.Services.DocumentUploadService>();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
