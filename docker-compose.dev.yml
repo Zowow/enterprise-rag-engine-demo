@@ -1,0 +1,182 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: ${PROJECT_NAME:-enterprise-rag}-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-devuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-enterprise_rag_dev}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-devuser} -d ${POSTGRES_DB:-enterprise_rag_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag-network
+
+  # Redis Cache & Rate Limiter
+  redis:
+    image: redis:7-alpine
+    container_name: ${PROJECT_NAME:-enterprise-rag}-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag-network
+
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:v1.12.0
+    container_name: ${PROJECT_NAME:-enterprise-rag}-qdrant
+    restart: unless-stopped
+    ports:
+      - "${QDRANT_REST_PORT:-6333}:6333"
+      - "${QDRANT_GRPC_PORT:-6334}:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag-network
+
+  # Azurite (Azure Blob & Queue Storage Emulator)
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: ${PROJECT_NAME:-enterprise-rag}-azurite
+    restart: unless-stopped
+    ports:
+      - "${AZURITE_BLOB_PORT:-10000}:10000"
+      - "${AZURITE_QUEUE_PORT:-10001}:10001"
+      - "${AZURITE_TABLE_PORT:-10002}:10002"
+    volumes:
+      - azurite_data:/data
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --location /data --debug /data/debug.log
+    networks:
+      - rag-network
+
+  # Backend Web API (.NET 9)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: ${PROJECT_NAME:-enterprise-rag}-backend
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:5000
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:-enterprise_rag_dev};Username=${POSTGRES_USER:-devuser};Password=${POSTGRES_PASSWORD:-devpassword}
+      ConnectionStrings__Redis: redis:6379
+      ConnectionStrings__Azurite: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;
+      Qdrant__Host: qdrant
+      Qdrant__Port: 6334
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    volumes:
+      - ./backend:/app
+      - backend_nuget:/root/.nuget/packages
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    networks:
+      - rag-network
+
+  # Background Ingestion Worker (.NET 9)
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile.dev
+    container_name: ${PROJECT_NAME:-enterprise-rag}-worker
+    environment:
+      DOTNET_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:-enterprise_rag_dev};Username=${POSTGRES_USER:-devuser};Password=${POSTGRES_PASSWORD:-devpassword}
+      ConnectionStrings__Redis: redis:6379
+      ConnectionStrings__Azurite: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;QueueEndpoint=http://azurite:10001/devstoreaccount1;
+      Qdrant__Host: qdrant
+      Qdrant__Port: 6334
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      Backend__SignalRHubUrl: http://backend:5000/hubs/ingestion
+    volumes:
+      - ./worker:/app
+      - worker_nuget:/root/.nuget/packages
+    depends_on:
+      db:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+      qdrant:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    networks:
+      - rag-network
+
+  # Frontend Web Client (React / Vite)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: ${PROJECT_NAME:-enterprise-rag}-frontend
+    environment:
+      PORT: ${FRONTEND_PORT:-3000}
+      VITE_API_URL: http://localhost:${BACKEND_PORT:-5000}
+      VITE_SIGNALR_URL: http://localhost:${BACKEND_PORT:-5000}/hubs/ingestion
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - rag-network
+
+  # Playwright E2E Test Runner
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.48.0-jammy
+    container_name: ${PROJECT_NAME:-enterprise-rag}-playwright
+    environment:
+      BASE_URL: http://frontend:3000
+      CI: "true"
+    working_dir: /e2e
+    volumes:
+      - ./e2e:/e2e
+      - /e2e/node_modules
+    depends_on:
+      - frontend
+    networks:
+      - rag-network
+    ipc: host
+
+networks:
+  rag-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+  azurite_data:
+  backend_nuget:
+  worker_nuget:

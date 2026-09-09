@@ -47,6 +47,7 @@ docker-compose.override.yml
 
 #Directories
 prds
+user-stories
 templates
 .agents
 WORKFLOW.md
