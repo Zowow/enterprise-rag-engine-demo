@@ -7,7 +7,7 @@
 
 ## 🚦 Execution Status Tracker
 
-- **Overall Progress:** `[ 1 / 12 Milestones Completed ]`
+- **Overall Progress:** `[ 2 / 12 Milestones Completed ]`
 - **Target Branch:** `feat/prd-001-enterprise-rag-engine`
 
 ---
@@ -27,7 +27,7 @@
   ```
 * **Success Criteria:** Docker compose configuration validates without schema errors and defines all necessary service dependencies, volumes, and ports.
 
-### [ ] Milestone 2: PostgreSQL Schema Entities & EF Core Migrations
+### [x] Milestone 2: PostgreSQL Schema Entities & EF Core Migrations
 * **Scope:** Implement EF Core DbContext, entity models for `Document` and `AuditLog`, and initial migration scripts.
 * **Target Files:**
   * `backend/src/Infrastructure/Data/AppDbContext.cs`

@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 ENV DOTNET_USE_POLLING_FILE_WATCHER=true
 ENV ASPNETCORE_ENVIRONMENT=Development
 ENV ASPNETCORE_URLS=http://+:5000
+ENV PATH="$PATH:/root/.dotnet/tools"
 
 EXPOSE 5000
 
-CMD ["dotnet", "watch", "run", "--non-interactive"]
+CMD ["dotnet", "watch", "--project", "src/EnterpriseRAG.Api.csproj", "run", "--non-interactive"]
