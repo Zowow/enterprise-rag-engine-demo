@@ -30,6 +30,8 @@ builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
     return StackExchange.Redis.ConnectionMultiplexer.Connect(options);
 });
 builder.Services.AddSingleton<EnterpriseRAG.Infrastructure.Cache.IRedisRateLimiter, EnterpriseRAG.Infrastructure.Cache.RedisRateLimiter>();
+builder.Services.AddSingleton<EnterpriseRAG.Infrastructure.Cache.IRedisSemanticCache, EnterpriseRAG.Infrastructure.Cache.RedisSemanticCache>();
+builder.Services.AddScoped<EnterpriseRAG.Application.Services.ISemanticCacheService, EnterpriseRAG.Application.Services.SemanticCacheService>();
 
 // Semantic Kernel & RAG Retrieval
 builder.Services.AddSingleton<EnterpriseRAG.Infrastructure.AI.ISemanticKernelOrchestrator, EnterpriseRAG.Infrastructure.AI.SemanticKernelOrchestrator>();

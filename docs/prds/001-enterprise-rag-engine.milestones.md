@@ -7,7 +7,7 @@
 
 ## 🚦 Execution Status Tracker
 
-- **Overall Progress:** `[ 7 / 12 Milestones Completed ]`
+- **Overall Progress:** `[ 8 / 12 Milestones Completed ]`
 - **Target Branch:** `feat/prd-001-enterprise-rag-engine`
 
 ---
@@ -113,7 +113,7 @@
   ```
 * **Success Criteria:** Queries retrieve top Qdrant chunks, synthesize markdown answers with citations `{ documentTitle, pageNumber, excerpt }`, and insert token cost rows in PostgreSQL.
 
-### [ ] Milestone 8: Redis Semantic Query Caching
+### [x] Milestone 8: Redis Semantic Query Caching
 * **Scope:** Implement semantic caching layer: compute query embedding, check Redis vector similarity ($\ge 0.95$ threshold), return cached answer in $< 30$ms with `X-Cache: HIT-SEMANTIC`, and write new queries on miss with 24-hour TTL.
 * **Target Files:**
   * `backend/src/Application/Services/SemanticCacheService.cs`

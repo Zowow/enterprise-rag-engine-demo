@@ -76,6 +76,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile.dev
     container_name: ${PROJECT_NAME:-enterprise-rag}-backend
+    restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:5000
