@@ -31,6 +31,11 @@ builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
 });
 builder.Services.AddSingleton<EnterpriseRAG.Infrastructure.Cache.IRedisRateLimiter, EnterpriseRAG.Infrastructure.Cache.RedisRateLimiter>();
 
+// Semantic Kernel & RAG Retrieval
+builder.Services.AddSingleton<EnterpriseRAG.Infrastructure.AI.ISemanticKernelOrchestrator, EnterpriseRAG.Infrastructure.AI.SemanticKernelOrchestrator>();
+builder.Services.AddSingleton<EnterpriseRAG.Infrastructure.AI.IQdrantRetrievalService, EnterpriseRAG.Infrastructure.AI.QdrantRetrievalService>();
+builder.Services.AddScoped<EnterpriseRAG.Application.Services.IRagQueryService, EnterpriseRAG.Application.Services.RagQueryService>();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
