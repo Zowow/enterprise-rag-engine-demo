@@ -18,6 +18,8 @@ else
 
 builder.Services.AddScoped<EnterpriseRAG.Application.Common.Interfaces.IAzureBlobQueueService, EnterpriseRAG.Infrastructure.Storage.AzureBlobQueueService>();
 builder.Services.AddScoped<EnterpriseRAG.Application.Services.IDocumentUploadService, EnterpriseRAG.Application.Services.DocumentUploadService>();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<EnterpriseRAG.Application.Common.Interfaces.IIngestionNotifier, EnterpriseRAG.Infrastructure.Notifications.SignalRIngestionNotifier>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -29,5 +31,6 @@ app.UseRouting();
 app.MapGet("/healthz", () => Results.Ok(new { status = "healthy", timestamp = DateTimeOffset.UtcNow }));
 
 app.MapControllers();
+app.MapHub<EnterpriseRAG.Api.Hubs.IngestionHub>("/hubs/ingestion");
 
 app.Run();
