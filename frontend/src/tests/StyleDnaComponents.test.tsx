@@ -1,12 +1,39 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import App from '../App';
+import { DocumentListTable } from '../components/DocumentListTable';
 import { ragClient } from '../api/ragClient';
+import type { DocumentItem } from '../types/rag';
 
-describe('Medango Style DNA UI Integration', () => {
+const mockDocuments: DocumentItem[] = [
+  {
+    id: 'doc-1',
+    title: 'Security Compliance Handbook',
+    fileName: 'security-compliance-handbook.pdf',
+    fileSizeBytes: 1048576,
+    status: 'Completed',
+    failureReason: null,
+    chunkCount: 18,
+    createdAt: '2026-09-10T12:00:00Z',
+    updatedAt: '2026-09-10T12:05:00Z',
+  },
+  {
+    id: 'doc-2',
+    title: 'Data Privacy Guidelines',
+    fileName: 'privacy-policy.docx',
+    fileSizeBytes: 524288,
+    status: 'Processing',
+    failureReason: null,
+    chunkCount: 8,
+    createdAt: '2026-09-10T13:00:00Z',
+    updatedAt: '2026-09-10T13:01:00Z',
+  },
+];
+
+describe('Streamlined Medango UI & Feature Pruning (Milestone 14)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
-    vi.spyOn(ragClient, 'getDocuments').mockResolvedValue([]);
+    vi.spyOn(ragClient, 'getDocuments').mockResolvedValue(mockDocuments);
     vi.spyOn(ragClient, 'getAuditMetrics').mockResolvedValue({
       totalQueries: 12,
       totalTokens: 1250,
@@ -19,59 +46,81 @@ describe('Medango Style DNA UI Integration', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders top navigation with brand glyph, quick search pill, and keyboard shortcut badge', async () => {
+  it('renders streamlined top navigation with brand glyph, title, subtitle, and live SignalR status only', async () => {
     render(<App />);
 
-    // Brand logo and title
+    // Brand logo, title, and subtitle
     expect(screen.getByText('Enterprise Knowledge RAG Engine')).toBeInTheDocument();
+    expect(screen.getByText(/Verified Compliance & Legal Intelligence Platform/i)).toBeInTheDocument();
     expect(screen.getByTestId('brand-logo-glyph')).toBeInTheDocument();
 
-    // Quick search pill & shortcut badge
-    const searchInput = screen.getByTestId('global-search-input');
+    // Live SignalR status text
+    expect(screen.getByText(/SignalR:/i)).toBeInTheDocument();
+
+    // Dead header search elements must NOT be present in top nav
+    expect(screen.queryByTestId('global-search-input')).toBeNull();
+    expect(screen.queryByTestId('search-shortcut-badge')).toBeNull();
+  });
+
+  it('prunes dead mock features (profile card, bento switches, and navigation tabs)', async () => {
+    render(<App />);
+
+    // Auditor profile card must be removed
+    expect(screen.queryByTestId('auditor-profile-card')).toBeNull();
+    expect(screen.queryByTestId('profile-sunburst-header')).toBeNull();
+    expect(screen.queryByText(/Sarah Jenkins/i)).toBeNull();
+    expect(screen.queryByText(/Lead Compliance Auditor/i)).toBeNull();
+
+    // Connected engines bento toggles must be removed
+    expect(screen.queryByTestId('connected-engines-grid')).toBeNull();
+    expect(screen.queryByTestId('engine-toggle-switch')).toBeNull();
+
+    // Navigation tabs must be removed
+    expect(screen.queryByTestId('rag-navigation-tabs')).toBeNull();
+    expect(screen.queryByRole('tab', { name: /overview/i })).toBeNull();
+    expect(screen.queryByRole('tab', { name: /query studio/i })).toBeNull();
+  });
+
+  it('renders streamlined two-column cockpit layout with Knowledge Repository and Q&A Intelligence', async () => {
+    render(<App />);
+
+    expect(screen.getByRole('heading', { name: /Knowledge Repository/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Verified Q&A Intelligence/i })).toBeInTheDocument();
+  });
+
+  it('renders inline document search in DocumentListTable and filters documents in real-time', async () => {
+    render(<DocumentListTable documents={mockDocuments} />);
+
+    // Search input should be present inside table header
+    const searchInput = screen.getByTestId('document-search-input');
     expect(searchInput).toBeInTheDocument();
-    expect(searchInput).toHaveAttribute('placeholder', 'Quick search...');
-    expect(screen.getByTestId('search-shortcut-badge')).toBeInTheDocument();
-    expect(screen.getByTestId('search-shortcut-badge')).toHaveTextContent('⌘ S');
+    expect(searchInput).toHaveAttribute('placeholder', 'Filter documents...');
+
+    // Initially all documents are visible
+    expect(screen.getByText('Security Compliance Handbook')).toBeInTheDocument();
+    expect(screen.getByText('Data Privacy Guidelines')).toBeInTheDocument();
+
+    // Type filter query
+    fireEvent.change(searchInput, { target: { value: 'Privacy' } });
+
+    // Filtered state
+    expect(screen.queryByText('Security Compliance Handbook')).toBeNull();
+    expect(screen.getByText('Data Privacy Guidelines')).toBeInTheDocument();
+
+    // Clear filter query
+    fireEvent.change(searchInput, { target: { value: '' } });
+    expect(screen.getByText('Security Compliance Handbook')).toBeInTheDocument();
+    expect(screen.getByText('Data Privacy Guidelines')).toBeInTheDocument();
   });
 
-  it('renders segmented pill navigation tabs and allows switching active tab', async () => {
-    render(<App />);
+  it('displays empty search result state when filter query yields no matches', async () => {
+    render(<DocumentListTable documents={mockDocuments} />);
 
-    const tabsNav = screen.getByTestId('rag-navigation-tabs');
-    expect(tabsNav).toBeInTheDocument();
+    const searchInput = screen.getByTestId('document-search-input');
+    fireEvent.change(searchInput, { target: { value: 'NonexistentKeyword12345' } });
 
-    // Verify key tabs
-    expect(screen.getByRole('tab', { name: /overview/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /documents/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /query studio/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /telemetry/i })).toBeInTheDocument();
-
-    // Switch tab
-    const documentsTab = screen.getByRole('tab', { name: /documents/i });
-    fireEvent.click(documentsTab);
-    expect(documentsTab).toHaveClass('rag-tab-pill--active');
-  });
-
-  it('renders auditor profile card with warm sunburst header and badges', async () => {
-    render(<App />);
-
-    expect(screen.getByTestId('auditor-profile-card')).toBeInTheDocument();
-    expect(screen.getByTestId('profile-sunburst-header')).toBeInTheDocument();
-    expect(screen.getByText(/Lead Compliance Auditor/i)).toBeInTheDocument();
-    expect(screen.getByTestId('profile-connected-badges')).toBeInTheDocument();
-  });
-
-  it('renders dark contrast bento cards for connected engines telemetry with toggles', async () => {
-    render(<App />);
-
-    // Connected engines section
-    expect(screen.getByTestId('connected-engines-grid')).toBeInTheDocument();
-    expect(screen.getByText(/Qdrant Vector DB/i)).toBeInTheDocument();
-    expect(screen.getByText(/Redis Semantic Cache/i)).toBeInTheDocument();
-
-    // iOS style toggles
-    const toggles = screen.getAllByTestId('engine-toggle-switch');
-    expect(toggles.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByTestId('document-search-empty-state')).toBeInTheDocument();
+    expect(screen.getByText(/No documents match your search/i)).toBeInTheDocument();
   });
 
   it('preserves all core workflow test IDs and critical elements', async () => {
