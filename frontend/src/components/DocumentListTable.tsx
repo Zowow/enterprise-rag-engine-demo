@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FileText,
   RefreshCw,
@@ -10,6 +10,8 @@ import {
   Clock,
   Loader2,
   Inbox,
+  Search,
+  X,
 } from 'lucide-react';
 import type { DocumentItem, IngestionStatus } from '../types/rag';
 
@@ -26,6 +28,8 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
   onRefresh,
   className = '',
 }) => {
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
   const formatFileSize = (bytes: number): string => {
     if (!bytes || isNaN(bytes)) return '0 B';
     if (bytes < 1024) return `${bytes} B`;
@@ -47,6 +51,15 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
       return dateStr;
     }
   };
+
+  const filteredDocuments = documents.filter((doc) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      doc.title.toLowerCase().includes(q) ||
+      doc.fileName.toLowerCase().includes(q)
+    );
+  });
 
   const renderStatusBadge = (status: IngestionStatus | string, failureReason?: string | null) => {
     switch (status) {
@@ -110,19 +123,44 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
           </span>
         </div>
 
-        {onRefresh && (
-          <button
-            type="button"
-            data-testid="document-refresh-button"
-            className="rag-btn rag-btn--secondary rag-btn--sm"
-            onClick={onRefresh}
-            disabled={isLoading}
-            title="Refresh document list"
-          >
-            <RefreshCw size={14} className={isLoading ? 'rag-spinner' : ''} />
-            <span>Refresh</span>
-          </button>
-        )}
+        <div className="rag-table-actions">
+          <div className="rag-table-search">
+            <Search size={14} className="rag-table-search-icon" />
+            <input
+              type="text"
+              data-testid="document-search-input"
+              className="rag-table-search-input"
+              placeholder="Filter documents..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="rag-table-search-clear"
+                onClick={() => setSearchQuery('')}
+                title="Clear filter"
+                aria-label="Clear filter"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
+          {onRefresh && (
+            <button
+              type="button"
+              data-testid="document-refresh-button"
+              className="rag-btn rag-btn--secondary rag-btn--sm"
+              onClick={onRefresh}
+              disabled={isLoading}
+              title="Refresh document list"
+            >
+              <RefreshCw size={14} className={isLoading ? 'rag-spinner' : ''} />
+              <span>Refresh</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {documents.length === 0 ? (
@@ -134,6 +172,24 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
           <p className="rag-empty-desc">
             Upload legal agreements, compliance manuals, or policy files to begin indexing.
           </p>
+        </div>
+      ) : filteredDocuments.length === 0 ? (
+        <div data-testid="document-search-empty-state" className="rag-empty-state">
+          <div className="rag-empty-icon">
+            <Inbox size={42} />
+          </div>
+          <p className="rag-empty-title">No documents match your search</p>
+          <p className="rag-empty-desc">
+            No indexed documents found matching &ldquo;{searchQuery}&rdquo;. Try a different keyword or clear the filter.
+          </p>
+          <button
+            type="button"
+            className="rag-btn rag-btn--secondary rag-btn--sm"
+            onClick={() => setSearchQuery('')}
+            style={{ marginTop: '0.75rem' }}
+          >
+            Clear Filter
+          </button>
         </div>
       ) : (
         <div className="rag-table-scroll">
@@ -148,7 +204,7 @@ export const DocumentListTable: React.FC<DocumentListTableProps> = ({
               </tr>
             </thead>
             <tbody>
-              {documents.map((doc) => (
+              {filteredDocuments.map((doc) => (
                 <tr key={doc.id} data-testid="document-row" className="rag-table-row">
                   <td className="rag-td-title">
                     <div className="rag-doc-cell">
