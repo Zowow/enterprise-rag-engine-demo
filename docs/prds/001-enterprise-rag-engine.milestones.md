@@ -7,7 +7,7 @@
 
 ## 🚦 Execution Status Tracker
 
-- **Overall Progress:** `[ 5 / 12 Milestones Completed ]`
+- **Overall Progress:** `[ 6 / 12 Milestones Completed ]`
 - **Target Branch:** `feat/prd-001-enterprise-rag-engine`
 
 ---
@@ -88,7 +88,7 @@
 
 ## 🧠 Phase 3: RAG Retrieval, Semantic Caching & Rate Limiting
 
-### [ ] Milestone 6: Redis Sliding-Window Rate Limiting Middleware
+### [x] Milestone 6: Redis Sliding-Window Rate Limiting Middleware
 * **Scope:** Implement ASP.NET Core rate limiting middleware backed by Redis, enforcing 20 queries/min and 5 uploads/min per IP with HTTP `429 Too Many Requests` and `Retry-After` headers.
 * **Target Files:**
   * `backend/src/Api/Middleware/RedisRateLimitingMiddleware.cs`
