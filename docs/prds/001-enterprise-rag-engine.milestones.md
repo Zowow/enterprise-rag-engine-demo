@@ -7,7 +7,7 @@
 
 ## 🚦 Execution Status Tracker
 
-- **Overall Progress:** `[ 10 / 12 Milestones Completed ]`
+- **Overall Progress:** `[ 13 / 14 Milestones Completed ]`
 - **Target Branch:** `feat/prd-001-enterprise-rag-engine`
 
 ---
@@ -182,3 +182,41 @@
   docker compose exec playwright npx playwright test e2e/tests/rag-pipeline.spec.ts
   ```
 * **Success Criteria:** Headless Playwright suite executes cleanly in Docker, DOM assertions pass, and UI validation screenshot is generated in `e2e/artifacts/`.
+
+---
+
+## 🎨 Phase 6: UI Design System & Style DNA Refactoring
+
+### [x] Milestone 13: Frontend Style DNA Refactoring (Medango Theme)
+* **Scope:** Refactor React frontend CSS, typography, components, and layouts to fully adopt the Medango Style DNA documented in `docs/DESIGN_SYSTEM.md`: light-canvas first (`#F7F8FA`), dark contrast bento anchor cards (`#181920`), pill-shaped segmented tabs & search bar, warm sunburst profile header, and smooth modern micro-interactions while maintaining 100% test compatibility and `data-testid` integrity.
+* **Target Files:**
+  * `frontend/index.html`
+  * `frontend/src/index.css`
+  * `frontend/src/App.tsx`
+  * `frontend/src/tests/StyleDnaComponents.test.tsx`
+* **Verification Command:**
+  ```bash
+  docker compose exec frontend npm test
+  docker compose exec frontend npm run typecheck
+  ```
+* **Success Criteria:** All unit tests pass in Docker, TypeScript compilation passes with 0 errors, and Playwright E2E pipeline remains green.
+
+---
+
+## 🧹 Phase 7: UI Streamlining & Feature Pruning
+
+### [ ] Milestone 14: UI Streamlining & Unused Feature Pruning
+* **Scope:** Prune unused mock features from `App.tsx` (Sarah Jenkins auditor profile card, dummy Qdrant/Redis toggle switches, non-functional navigation tabs, disconnected top-nav search pill). Relocate document search directly into `DocumentListTable` header for intuitive inline filtering. Preserve core Medango Style DNA (light `#F7F8FA` canvas, squircle cards, Google Fonts typography, royal blue accents, animated progress bars, live SignalR status, and TokenMetricsRibbon). Update unit tests in `StyleDnaComponents.test.tsx` to assert the streamlined UI without testing dead mock elements.
+* **Target Files:**
+  * `frontend/src/App.tsx`
+  * `frontend/src/components/DocumentListTable.tsx`
+  * `frontend/src/index.css`
+  * `frontend/src/tests/StyleDnaComponents.test.tsx`
+* **Verification Command:**
+  ```bash
+  docker compose exec frontend npm test
+  docker compose exec frontend npm run typecheck
+  docker compose exec playwright npx playwright test e2e/tests/rag-pipeline.spec.ts
+  ```
+* **Success Criteria:** All unit tests pass in Docker, TypeScript compiler reports 0 errors, Playwright E2E suite passes in Docker, and the UI layout is clean, responsive, and 100% functional with zero dead mock UI.
+
