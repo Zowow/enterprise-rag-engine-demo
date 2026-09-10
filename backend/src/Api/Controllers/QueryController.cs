@@ -43,6 +43,11 @@ public class QueryController : ControllerBase
         {
             var result = await _ragQueryService.ExecuteQueryAsync(request.Query, cancellationToken);
 
+            if (Response?.Headers != null)
+            {
+                Response.Headers["X-Cache"] = result.IsCached ? "HIT-SEMANTIC" : "MISS";
+            }
+
             return Ok(new
             {
                 success = true,

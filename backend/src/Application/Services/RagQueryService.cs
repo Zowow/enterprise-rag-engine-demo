@@ -30,15 +30,18 @@ public class RagQueryService : IRagQueryService
     private readonly ISemanticKernelOrchestrator _orchestrator;
     private readonly IQdrantRetrievalService _qdrantRetrieval;
     private readonly AppDbContext _dbContext;
+    private readonly ISemanticCacheService? _semanticCacheService;
 
     public RagQueryService(
         ISemanticKernelOrchestrator orchestrator,
         IQdrantRetrievalService qdrantRetrieval,
-        AppDbContext dbContext)
+        AppDbContext dbContext,
+        ISemanticCacheService? semanticCacheService = null)
     {
         _orchestrator = orchestrator;
         _qdrantRetrieval = qdrantRetrieval;
         _dbContext = dbContext;
+        _semanticCacheService = semanticCacheService;
     }
 
     public async Task<RagQueryResult> ExecuteQueryAsync(string query, CancellationToken cancellationToken = default)
@@ -53,7 +56,46 @@ public class RagQueryService : IRagQueryService
         // 1. Generate query embedding
         var embedding = await _orchestrator.GenerateEmbeddingAsync(query, cancellationToken);
 
-        // 2. Search nearest neighbors in Qdrant (k=4, threshold=0.70)
+        // 2. Check semantic cache for existing similar query (threshold >= 0.95)
+        if (_semanticCacheService != null)
+        {
+            var cached = await _semanticCacheService.CheckCacheAsync(embedding, minThreshold: 0.95f, cancellationToken: cancellationToken);
+            if (cached != null)
+            {
+                stopwatch.Stop();
+                var cachedDurationMs = (int)stopwatch.ElapsedMilliseconds;
+
+                var cachedAuditLog = new AuditLog
+                {
+                    Id = Guid.NewGuid(),
+                    QueryText = query,
+                    ResponseCached = true,
+                    CacheScore = Math.Round((double)cached.SimilarityScore, 4),
+                    PromptTokens = 0,
+                    CompletionTokens = 0,
+                    TotalTokens = 0,
+                    EstimatedCostUsd = 0.000000m,
+                    ExecutionDurationMs = cachedDurationMs,
+                    CreatedAt = DateTimeOffset.UtcNow
+                };
+
+                _dbContext.AuditLogs.Add(cachedAuditLog);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+
+                return new RagQueryResult(
+                    Answer: cached.Answer,
+                    Citations: cached.Citations,
+                    IsCached: true,
+                    CostUsd: 0.000000m,
+                    PromptTokens: 0,
+                    CompletionTokens: 0,
+                    TotalTokens: 0,
+                    ExecutionDurationMs: cachedDurationMs
+                );
+            }
+        }
+
+        // 3. Search nearest neighbors in Qdrant (k=4, threshold=0.70)
         var retrievedChunks = await _qdrantRetrieval.SearchSimilarChunksAsync(
             queryVector: embedding,
             topK: 4,
@@ -92,6 +134,18 @@ public class RagQueryService : IRagQueryService
                 pageNumber: c.PageNumber,
                 excerpt: c.Text
             )).ToList();
+
+            // Cache new synthesized query response in Redis with 24-hour TTL
+            if (_semanticCacheService != null)
+            {
+                await _semanticCacheService.StoreAsync(
+                    query: query,
+                    queryEmbedding: embedding,
+                    answer: answer,
+                    citations: citations,
+                    ttl: TimeSpan.FromHours(24),
+                    cancellationToken: cancellationToken);
+            }
         }
 
         stopwatch.Stop();
