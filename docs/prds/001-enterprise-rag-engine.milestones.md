@@ -7,7 +7,7 @@
 
 ## 🚦 Execution Status Tracker
 
-- **Overall Progress:** `[ 8 / 12 Milestones Completed ]`
+- **Overall Progress:** `[ 10 / 12 Milestones Completed ]`
 - **Target Branch:** `feat/prd-001-enterprise-rag-engine`
 
 ---
@@ -141,7 +141,7 @@
   ```
 * **Success Criteria:** TypeScript compiles with 0 type errors across all API envelopes, models, and SignalR event payloads.
 
-### [ ] Milestone 10: Ingestion UI (Upload Dropzone, Real-time Progress & Document Table)
+### [x] Milestone 10: Ingestion UI (Upload Dropzone, Real-time Progress & Document Table)
 * **Scope:** Build React upload dropzone with client validation, animated SignalR progress bar, and document status table with required `data-testid` attributes.
 * **Target Files:**
   * `frontend/src/components/DocumentUploadZone.tsx`
