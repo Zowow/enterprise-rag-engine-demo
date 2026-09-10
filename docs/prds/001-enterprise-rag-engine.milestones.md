@@ -129,7 +129,7 @@
 
 ## 🌐 Phase 4: Shared Contracts & React Client UI
 
-### [ ] Milestone 9: API Client SDK, TypeScript Types & SignalR Hook
+### [x] Milestone 9: API Client SDK, TypeScript Types & SignalR Hook
 * **Scope:** Define shared TypeScript interfaces matching backend response envelopes, implement Axios API client, and author custom React hook for SignalR connection management.
 * **Target Files:**
   * `frontend/src/types/rag.ts`
