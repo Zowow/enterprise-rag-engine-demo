@@ -40,7 +40,7 @@ export function useIngestionSignalR(
     hubUrl ||
     (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SIGNALR_URL
       ? import.meta.env.VITE_SIGNALR_URL
-      : 'http://localhost:5000/hubs/ingestion');
+      : '/hubs/ingestion');
 
   const [connectionState, setConnectionState] =
     useState<SignalRConnectionStatus>('Disconnected');

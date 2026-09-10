@@ -295,7 +295,7 @@ export const RagChatInterface: React.FC<RagChatInterfaceProps> = ({
 
                 {msg.role === 'assistant' ? (
                   <>
-                    <div className="rag-chat-answer">
+                    <div data-testid="rag-answer-container" className="rag-chat-answer">
                       {renderSimpleMarkdown(msg.content)}
                     </div>
 
