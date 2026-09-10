@@ -8,4 +8,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 ENV DOTNET_USE_POLLING_FILE_WATCHER=true
 ENV DOTNET_ENVIRONMENT=Development
 
-CMD ["dotnet", "watch", "run", "--non-interactive"]
+CMD ["dotnet", "watch", "--project", "src/EnterpriseRAG.Worker.csproj", "run", "--non-interactive"]
