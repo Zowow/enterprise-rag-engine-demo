@@ -172,7 +172,7 @@
 
 ## 🧪 Phase 5: End-to-End Verification
 
-### [ ] Milestone 12: Playwright Automated E2E Pipeline in Docker
+### [x] Milestone 12: Playwright Automated E2E Pipeline in Docker
 * **Scope:** Author complete headless Playwright E2E test verifying full user journey: document upload $\rightarrow$ SignalR progress bar updates $\rightarrow$ query execution $\rightarrow$ citation drawer inspection $\rightarrow$ rapid query rate limit 429 banner trigger.
 * **Target Files:**
   * `e2e/tests/rag-pipeline.spec.ts`

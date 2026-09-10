@@ -287,10 +287,12 @@ public class QdrantRetrievalService : IQdrantRetrievalService
     public const string CollectionName = "documents";
     private readonly QdrantClient _client;
     private readonly ILogger<QdrantRetrievalService>? _logger;
+    private readonly string _apiKey;
 
     public QdrantRetrievalService(IConfiguration configuration, ILogger<QdrantRetrievalService>? logger = null)
     {
         _logger = logger;
+        _apiKey = configuration["OPENAI_API_KEY"] ?? configuration["OpenAI:ApiKey"] ?? string.Empty;
         var host = configuration["Qdrant:Host"] ?? configuration["Qdrant__Host"] ?? "qdrant";
         var portStr = configuration["Qdrant:Port"] ?? configuration["Qdrant__Port"] ?? "6334";
         var port = int.TryParse(portStr, out var p) ? p : 6334;
@@ -320,6 +322,16 @@ public class QdrantRetrievalService : IQdrantRetrievalService
                 limit: (ulong)topK,
                 scoreThreshold: scoreThreshold,
                 cancellationToken: cancellationToken);
+
+            if (searchResults.Count == 0 && string.IsNullOrWhiteSpace(_apiKey))
+            {
+                // In offline / deterministic mode, fallback to top-K chunks so offline demonstration functions end-to-end
+                searchResults = await _client.SearchAsync(
+                    collectionName: CollectionName,
+                    vector: queryVector,
+                    limit: (ulong)topK,
+                    cancellationToken: cancellationToken);
+            }
 
             var chunks = new List<RetrievedChunk>();
             foreach (var point in searchResults)

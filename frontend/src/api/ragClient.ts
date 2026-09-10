@@ -34,9 +34,9 @@ export class RagClient {
 
   constructor(baseURL?: string) {
     const defaultUrl =
-      typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL
+      typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL !== undefined
         ? import.meta.env.VITE_API_URL
-        : 'http://localhost:5000';
+        : '';
 
     this.axiosInstance = axios.create({
       baseURL: baseURL || defaultUrl,
