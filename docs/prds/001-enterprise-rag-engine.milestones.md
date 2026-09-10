@@ -154,7 +154,7 @@
   ```
 * **Success Criteria:** Component unit tests verify file selection, upload button triggers API, SignalR progress updates UI bar, and all test IDs are present.
 
-### [ ] Milestone 11: RAG Chat UI, Citation Drawer & Rate Limit Alert
+### [x] Milestone 11: RAG Chat UI, Citation Drawer & Rate Limit Alert
 * **Scope:** Build interactive query input, markdown answer viewer, clickable citation pills opening the slide-out citation drawer, cost metrics ribbon, and HTTP 429 rate limit countdown alert.
 * **Target Files:**
   * `frontend/src/components/RagChatInterface.tsx`

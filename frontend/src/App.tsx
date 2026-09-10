@@ -3,6 +3,7 @@ import { ShieldCheck, Database, Sparkles } from 'lucide-react';
 import { DocumentUploadZone } from './components/DocumentUploadZone';
 import { IngestionProgressBar } from './components/IngestionProgressBar';
 import { DocumentListTable } from './components/DocumentListTable';
+import { RagChatInterface } from './components/RagChatInterface';
 import { ragClient } from './api/ragClient';
 import { useIngestionSignalR } from './hooks/useIngestionSignalR';
 import type { DocumentItem, DocumentUploadResult } from './types/rag';
@@ -110,21 +111,14 @@ export const App: React.FC = () => {
             />
           </section>
 
-          {/* Right Column: RAG Q&A Interface (Milestone 11) */}
+          {/* Right Column: RAG Q&A Interface */}
           <section className="rag-dashboard-column">
             <div className="rag-column-header">
               <Sparkles size={20} className="rag-column-icon" />
               <h2>Verified Q&amp;A Intelligence</h2>
             </div>
 
-            <div className="rag-placeholder-card">
-              <div className="rag-placeholder-badge">Milestone 11 Ready</div>
-              <h3>RAG Chat &amp; Grounded Retrieval</h3>
-              <p>
-                Semantic Kernel orchestration, Qdrant vector retrieval, citation drawer,
-                and Redis semantic caching will be wired in Milestone 11.
-              </p>
-            </div>
+            <RagChatInterface />
           </section>
         </div>
       </main>
