@@ -21,12 +21,23 @@ builder.Services.AddScoped<EnterpriseRAG.Application.Services.IDocumentUploadSer
 builder.Services.AddSignalR();
 builder.Services.AddScoped<EnterpriseRAG.Application.Common.Interfaces.IIngestionNotifier, EnterpriseRAG.Infrastructure.Notifications.SignalRIngestionNotifier>();
 
+// Redis & Rate Limiting
+var redisConnection = builder.Configuration.GetConnectionString("Redis") ?? "localhost:6379";
+builder.Services.AddSingleton<StackExchange.Redis.IConnectionMultiplexer>(sp =>
+{
+    var options = StackExchange.Redis.ConfigurationOptions.Parse(redisConnection);
+    options.AbortOnConnectFail = false;
+    return StackExchange.Redis.ConnectionMultiplexer.Connect(options);
+});
+builder.Services.AddSingleton<EnterpriseRAG.Infrastructure.Cache.IRedisRateLimiter, EnterpriseRAG.Infrastructure.Cache.RedisRateLimiter>();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
 app.UseRouting();
+app.UseMiddleware<EnterpriseRAG.Api.Middleware.RedisRateLimitingMiddleware>();
 
 app.MapGet("/healthz", () => Results.Ok(new { status = "healthy", timestamp = DateTimeOffset.UtcNow }));
 
