@@ -109,6 +109,7 @@ services:
       context: ./worker
       dockerfile: Dockerfile.dev
     container_name: ${PROJECT_NAME:-enterprise-rag}-worker
+    restart: unless-stopped
     environment:
       DOTNET_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=${POSTGRES_DB:-enterprise_rag_dev};Username=${POSTGRES_USER:-devuser};Password=${POSTGRES_PASSWORD:-devpassword}
@@ -139,6 +140,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     container_name: ${PROJECT_NAME:-enterprise-rag}-frontend
+    restart: unless-stopped
     environment:
       PORT: ${FRONTEND_PORT:-3000}
       VITE_API_URL: ""

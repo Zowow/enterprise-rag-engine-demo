@@ -31,4 +31,12 @@ public class IngestionHub : Hub<IIngestionClient>
 
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, jobId);
     }
+
+    public async Task IngestionProgress(IngestionProgressUpdate update)
+    {
+        if (update != null && !string.IsNullOrWhiteSpace(update.JobId))
+        {
+            await Clients.All.IngestionProgress(update);
+        }
+    }
 }

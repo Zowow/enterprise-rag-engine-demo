@@ -198,4 +198,32 @@ public class SignalRNotifierTests
         // Assert
         await act.Should().ThrowAsync<ArgumentException>();
     }
+
+    [Fact]
+    public async Task IngestionHub_IngestionProgress_ValidUpdate_BroadcastsToAll()
+    {
+        // Arrange
+        var hub = new IngestionHub();
+        var mockCallerClients = new Mock<IHubCallerClients<IIngestionClient>>();
+        var mockClient = new Mock<IIngestionClient>();
+
+        var jobId = "job-relay-123";
+        mockCallerClients.Setup(c => c.All).Returns(mockClient.Object);
+        hub.Clients = mockCallerClients.Object;
+
+        var update = new IngestionProgressUpdate
+        {
+            JobId = jobId,
+            Status = IngestionStage.Embedding,
+            ProgressPercentage = 75,
+            Message = "Generating embeddings"
+        };
+
+        // Act
+        await hub.IngestionProgress(update);
+
+        // Assert
+        mockCallerClients.Verify(c => c.All, Times.Once);
+        mockClient.Verify(c => c.IngestionProgress(update), Times.Once);
+    }
 }
