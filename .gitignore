@@ -31,7 +31,9 @@ node_modules/
 dist/
 build/
 .npm
+.vite/
 *.log
+.last-run.json
 
 # Python
 __pycache__/
@@ -45,8 +47,13 @@ env/
 # Docker
 docker-compose.override.yml
 
+# Playwright Test Traces & Temp Videos
+*.zip
+*.webm
+
 #Directories
-prds
+user-stories
 templates
 .agents
 WORKFLOW.md
+docs
