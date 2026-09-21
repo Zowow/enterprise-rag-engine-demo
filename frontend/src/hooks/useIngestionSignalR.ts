@@ -146,21 +146,33 @@ export function useIngestionSignalR(
 
   const joinJob = useCallback(async (jobId: string) => {
     if (!jobId) return;
-    if (
-      connectionRef.current &&
-      connectionRef.current.state === HubConnectionState.Connected
-    ) {
-      await connectionRef.current.invoke('JoinJobGroup', jobId);
+    try {
+      if (connectionRef.current) {
+        if (connectionRef.current.state === HubConnectionState.Connecting) {
+          for (let i = 0; i < 25 && connectionRef.current.state === HubConnectionState.Connecting; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+        }
+        if (connectionRef.current.state === HubConnectionState.Connected) {
+          await connectionRef.current.invoke('JoinJobGroup', jobId);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to join job group:', err);
     }
   }, []);
 
   const leaveJob = useCallback(async (jobId: string) => {
     if (!jobId) return;
-    if (
-      connectionRef.current &&
-      connectionRef.current.state === HubConnectionState.Connected
-    ) {
-      await connectionRef.current.invoke('LeaveJobGroup', jobId);
+    try {
+      if (
+        connectionRef.current &&
+        connectionRef.current.state === HubConnectionState.Connected
+      ) {
+        await connectionRef.current.invoke('LeaveJobGroup', jobId);
+      }
+    } catch (err) {
+      console.warn('Failed to leave job group:', err);
     }
   }, []);
 
