@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using EnterpriseRAG.Worker.Chunking;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Embeddings;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
 
@@ -118,10 +120,49 @@ public class QdrantIndexer : IQdrantIndexer
     public const int VectorDimension = 1536;
 
     private readonly IQdrantService _qdrantService;
+    private readonly ILogger<QdrantIndexer>? _logger;
+    private readonly ITextEmbeddingGenerationService? _embeddingService;
+    private readonly bool _hasOpenAi;
 
-    public QdrantIndexer(IQdrantService qdrantService)
+    public QdrantIndexer(
+        IQdrantService qdrantService,
+        IConfiguration? configuration = null,
+        ILogger<QdrantIndexer>? logger = null,
+        ITextEmbeddingGenerationService? embeddingService = null)
     {
         _qdrantService = qdrantService;
+        _logger = logger;
+
+        if (embeddingService != null)
+        {
+            _embeddingService = embeddingService;
+            _hasOpenAi = true;
+            return;
+        }
+
+        var apiKey = configuration?["OPENAI_API_KEY"] ?? configuration?["OpenAI:ApiKey"] ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(apiKey))
+        {
+            try
+            {
+                var builder = Kernel.CreateBuilder();
+                builder.AddOpenAITextEmbeddingGeneration("text-embedding-3-small", apiKey);
+                var kernel = builder.Build();
+                _embeddingService = kernel.GetRequiredService<ITextEmbeddingGenerationService>();
+                _hasOpenAi = true;
+                _logger?.LogInformation("QdrantIndexer initialized with OpenAI text-embedding-3-small.");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to initialize OpenAI text embedding in worker. Falling back to deterministic embeddings.");
+                _hasOpenAi = false;
+            }
+        }
+        else
+        {
+            _hasOpenAi = false;
+            _logger?.LogInformation("No OpenAI API key provided. QdrantIndexer initialized in offline/deterministic mode.");
+        }
     }
 
     public async Task IndexChunksAsync(
@@ -135,11 +176,32 @@ public class QdrantIndexer : IQdrantIndexer
             return;
         }
 
+        var chunkTexts = chunks.Select(c => c.Text).ToList();
+        List<float[]>? vectors = null;
+
+        if (_hasOpenAi && _embeddingService != null)
+        {
+            try
+            {
+                _logger?.LogInformation("Generating OpenAI text-embedding-3-small embeddings for {Count} chunks...", chunks.Count);
+                var generatedList = await _embeddingService.GenerateEmbeddingsAsync(chunkTexts, cancellationToken: cancellationToken);
+                vectors = generatedList.Select(g => g.ToArray()).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Failed to generate OpenAI embeddings in worker. Falling back to deterministic embeddings.");
+            }
+        }
+
         var points = new List<VectorPoint>();
 
-        foreach (var chunk in chunks)
+        for (var i = 0; i < chunks.Count; i++)
         {
-            var vector = GenerateEmbedding(chunk.Text, VectorDimension);
+            var chunk = chunks[i];
+            var vector = (vectors != null && i < vectors.Count)
+                ? vectors[i]
+                : GenerateEmbedding(chunk.Text, VectorDimension);
+
             var payload = new Dictionary<string, object>
             {
                 { "docId", documentId.ToString() },

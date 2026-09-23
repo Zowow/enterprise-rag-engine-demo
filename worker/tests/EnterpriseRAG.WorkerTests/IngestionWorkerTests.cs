@@ -18,6 +18,8 @@ using EnterpriseRAG.Worker.VectorStore;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Embeddings;
 using Moq;
 using Xunit;
 
@@ -330,4 +332,70 @@ public class IngestionWorkerTests
             docId,
             It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task QdrantIndexer_WithoutApiKey_ShouldUseDeterministicEmbeddings()
+    {
+        // Arrange
+        var mockQdrant = new Mock<IQdrantService>();
+        IReadOnlyList<VectorPoint>? capturedPoints = null;
+        mockQdrant.Setup(q => q.UpsertPointsAsync(QdrantIndexer.CollectionName, It.IsAny<IReadOnlyList<VectorPoint>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, IReadOnlyList<VectorPoint>, CancellationToken>((col, pts, ct) => capturedPoints = pts)
+            .Returns(Task.CompletedTask);
+
+        var indexer = new QdrantIndexer(mockQdrant.Object);
+        var docId = Guid.NewGuid();
+        var chunks = new List<DocumentChunk>
+        {
+            new DocumentChunk(0, 1, "Testing deterministic embedding generation for chunk 0", 10)
+        };
+
+        // Act
+        await indexer.IndexChunksAsync(docId, "doc-test", chunks);
+
+        // Assert
+        capturedPoints.Should().NotBeNull();
+        capturedPoints!.Should().HaveCount(1);
+        capturedPoints[0].Vector.Should().HaveCount(1536);
+        // The first 32 dimensions repeat at dimension 32 in deterministic SHA256 mode
+        capturedPoints[0].Vector[0].Should().Be(capturedPoints[0].Vector[32]);
+    }
+
+    [Fact]
+    public async Task QdrantIndexer_WithEmbeddingService_ShouldUseGeneratedEmbeddings()
+    {
+        // Arrange
+        var mockQdrant = new Mock<IQdrantService>();
+        IReadOnlyList<VectorPoint>? capturedPoints = null;
+        mockQdrant.Setup(q => q.UpsertPointsAsync(QdrantIndexer.CollectionName, It.IsAny<IReadOnlyList<VectorPoint>>(), It.IsAny<CancellationToken>()))
+            .Callback<string, IReadOnlyList<VectorPoint>, CancellationToken>((col, pts, ct) => capturedPoints = pts)
+            .Returns(Task.CompletedTask);
+
+        var mockEmbeddingService = new Mock<ITextEmbeddingGenerationService>();
+        var fakeVector = new float[1536];
+        fakeVector[0] = 0.999f;
+        fakeVector[32] = 0.123f;
+        var memory = new ReadOnlyMemory<float>(fakeVector);
+
+        mockEmbeddingService.Setup(s => s.GenerateEmbeddingsAsync(It.IsAny<IList<string>>(), It.IsAny<Kernel?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ReadOnlyMemory<float>> { memory });
+
+        var indexer = new QdrantIndexer(mockQdrant.Object, embeddingService: mockEmbeddingService.Object);
+        var docId = Guid.NewGuid();
+        var chunks = new List<DocumentChunk>
+        {
+            new DocumentChunk(0, 1, "Testing AI embedding generation for chunk 0", 10)
+        };
+
+        // Act
+        await indexer.IndexChunksAsync(docId, "doc-test", chunks);
+
+        // Assert
+        capturedPoints.Should().NotBeNull();
+        capturedPoints!.Should().HaveCount(1);
+        capturedPoints[0].Vector[0].Should().Be(0.999f);
+        capturedPoints[0].Vector[32].Should().Be(0.123f);
+        mockEmbeddingService.Verify(s => s.GenerateEmbeddingsAsync(It.IsAny<IList<string>>(), It.IsAny<Kernel?>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
 }
+

@@ -323,14 +323,30 @@ public class QdrantRetrievalService : IQdrantRetrievalService
                 scoreThreshold: scoreThreshold,
                 cancellationToken: cancellationToken);
 
-            if (searchResults.Count == 0 && string.IsNullOrWhiteSpace(_apiKey))
+            if (searchResults.Count == 0)
             {
-                // In offline / deterministic mode, fallback to top-K chunks so offline demonstration functions end-to-end
-                searchResults = await _client.SearchAsync(
+                // In online mode with text-embedding-3-small, query-to-chunk cosine similarity on policy text
+                // ranges between 0.35 and 0.65 for specific bullet points and clauses. If strict 0.70 returned no chunks, check relaxed threshold (0.35).
+                var relaxedResults = await _client.SearchAsync(
                     collectionName: CollectionName,
                     vector: queryVector,
                     limit: (ulong)topK,
+                    scoreThreshold: 0.35f,
                     cancellationToken: cancellationToken);
+
+                if (relaxedResults.Count > 0)
+                {
+                    searchResults = relaxedResults;
+                }
+                else if (string.IsNullOrWhiteSpace(_apiKey))
+                {
+                    // In offline / deterministic mode, fallback to top-K chunks so offline demonstration functions end-to-end
+                    searchResults = await _client.SearchAsync(
+                        collectionName: CollectionName,
+                        vector: queryVector,
+                        limit: (ulong)topK,
+                        cancellationToken: cancellationToken);
+                }
             }
 
             var chunks = new List<RetrievedChunk>();

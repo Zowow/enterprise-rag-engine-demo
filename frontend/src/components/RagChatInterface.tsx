@@ -56,12 +56,12 @@ export const RagChatInterface: React.FC<RagChatInterfaceProps> = ({
   // Audit Metrics refresh key
   const [metricsRefreshKey, setMetricsRefreshKey] = useState<number>(0);
 
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const chatMessagesRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const scrollToBottom = () => {
-    if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
   };
 
@@ -240,7 +240,7 @@ export const RagChatInterface: React.FC<RagChatInterfaceProps> = ({
       />
 
       {/* Chat Messages Stream */}
-      <div className="rag-chat-messages">
+      <div ref={chatMessagesRef} className="rag-chat-messages">
         {messages.length === 0 ? (
           <div data-testid="chat-empty-state" className="rag-chat-empty">
             <div className="rag-chat-empty-icon-wrap">
@@ -382,7 +382,6 @@ export const RagChatInterface: React.FC<RagChatInterfaceProps> = ({
           </div>
         )}
 
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Query Input Box */}

@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>EnterpriseRAG.Worker</RootNamespace>
     <UserSecretsId>dotnet-EnterpriseRAG.Worker-Milestone5</UserSecretsId>
+    <NoWarn>$(NoWarn);SKEXP0001;SKEXP0010;SKEXP0070;CS0618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +20,7 @@
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.2.0" />
     <PackageReference Include="Qdrant.Client" Version="1.12.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.40.0" />
   </ItemGroup>
 
 </Project>
